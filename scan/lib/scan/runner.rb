@@ -87,10 +87,10 @@ module Scan
                                     suppress_output: Scan.config[:suppress_xcode_output],
                                              error: proc do |error_output, status|
                                                 begin
-                                                  exit_status = $?.exitstatus
-                                                  UI.error("Error output: #{error_output}, status: #{status} exit_status: #{exit_status}")
+                                                  # exit_status = $?.exitstatus
+                                                  # UI.message("Error output: #{error_output}, status: #{status} exit_status: #{exit_status}")
                                                   # Prefer status passed from CommandExecutor; fall back to last child status
-                                                  # exit_status = status || ($? && $?.exitstatus) || 1
+                                                  exit_status = status || $?.exitstatus
                                                   if retries > 0
                                                     # If there are retries remaining, run the tests again
                                                     return retry_execute(retries: retries, error_output: error_output)
@@ -98,7 +98,7 @@ module Scan
                                                     ErrorHandler.handle_build_error(error_output, @test_command_generator.xcodebuild_log_path)
                                                   end
                                                 rescue => ex
-                                                  UI.error("Error raised: #{ex}")
+                                                  # UI.error("Error raised: #{ex}")
                                                   SlackPoster.new.run({
                                                     build_errors: 1
                                                   })
