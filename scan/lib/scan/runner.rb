@@ -77,15 +77,19 @@ module Scan
       ]
       exit_status = 0
 
+      UI.important("Running tests for #{Scan.config[:app_identifier]}. Logs: #{@test_command_generator.xcodebuild_log_path}")
+
       FastlaneCore::CommandExecutor.execute(command: command,
                                           print_all: true,
                                       print_command: true,
                                              prefix: prefix_hash,
                                             loading: "Loading...",
                                     suppress_output: Scan.config[:suppress_xcode_output],
-                                              error: proc do |error_output|
+                                             error: proc do |error_output, status|
                                                 begin
-                                                  exit_status = $?.exitstatus
+                                                  # Prefer status passed from CommandExecutor; fall back to last child status
+                                                  UI.error("Error output: #{error_output}, status: #{status}")
+                                                  exit_status = status || ($? && $?.exitstatus) || 1
                                                   if retries > 0
                                                     # If there are retries remaining, run the tests again
                                                     return retry_execute(retries: retries, error_output: error_output)
@@ -93,6 +97,7 @@ module Scan
                                                     ErrorHandler.handle_build_error(error_output, @test_command_generator.xcodebuild_log_path)
                                                   end
                                                 rescue => ex
+                                                  UI.error("Error raised: #{ex}")
                                                   SlackPoster.new.run({
                                                     build_errors: 1
                                                   })
@@ -100,6 +105,7 @@ module Scan
                                                 end
                                               end)
 
+      UI.error("Runner finished with exit status: #{exit_status}")
       exit_status
     end
 
@@ -263,7 +269,18 @@ module Scan
       zip_build_products
       copy_xctestrun
 
-      return nil if Scan.config[:build_for_testing]
+      # For build_for_testing, no tests are executed and no results are parsed.
+      # Ensure we still fail the step on any non-zero exit status from xcodebuild.
+      if Scan.config[:build_for_testing]
+        unless tests_exit_status == 0
+          if Scan.config[:fail_build]
+            UI.build_failure!("Build for testing failed. Exit status: #{tests_exit_status}")
+          else
+            UI.error("Build for testing failed. Exit status: #{tests_exit_status}")
+          end
+        end
+        return nil
+      end
 
       results = trainer_test_results
 
