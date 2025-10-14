@@ -87,9 +87,10 @@ module Scan
                                     suppress_output: Scan.config[:suppress_xcode_output],
                                              error: proc do |error_output, status|
                                                 begin
+                                                  exit_status = $?.exitstatus
+                                                  UI.error("Error output: #{error_output}, status: #{status} exit_status: #{exit_status}")
                                                   # Prefer status passed from CommandExecutor; fall back to last child status
-                                                  UI.error("Error output: #{error_output}, status: #{status}")
-                                                  exit_status = status || ($? && $?.exitstatus) || 1
+                                                  # exit_status = status || ($? && $?.exitstatus) || 1
                                                   if retries > 0
                                                     # If there are retries remaining, run the tests again
                                                     return retry_execute(retries: retries, error_output: error_output)
