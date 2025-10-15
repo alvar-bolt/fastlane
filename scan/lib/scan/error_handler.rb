@@ -13,6 +13,13 @@ module Scan
         location = Scan.config[:suppress_xcode_output] ? "here: '#{log_path}'" : "above"
         details = "#{instruction} #{location}."
 
+        # DEBUGGING: Write output to log_path + ".error" for easier debugging
+        begin
+          File.write(log_path + ".error", output)
+        rescue => ex
+          UI.important("Couldn't write error output to file '#{log_path}.error': #{ex}")
+        end
+
         case output
         when /US\-ASCII/
           print("Your shell environment is not correctly configured")
