@@ -50,6 +50,7 @@ module Scan
           # test summary (number of tests passed, etc.).
           # Instead, it just prints "Failing tests:"
           # followed by a list of tests that failed.
+          UI.important("Fell into 'Executed' or 'Failing tests:' case, not raising an exception")
           return
         end
         UI.build_failure!("Error building/testing the application. #{details}")

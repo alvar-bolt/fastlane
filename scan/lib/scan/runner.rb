@@ -95,9 +95,12 @@ module Scan
                                                     # If there are retries remaining, run the tests again
                                                     return retry_execute(retries: retries, error_output: error_output)
                                                   else
+                                                    UI.important("Calling handle_build_error")
                                                     ErrorHandler.handle_build_error(error_output, @test_command_generator.xcodebuild_log_path)
+                                                    UI.important("Returned from handle_build_error")
                                                   end
                                                 rescue => ex
+                                                  UI.important("caught exception #{ex} in error block")
                                                   # UI.error("Error raised: #{ex}")
                                                   SlackPoster.new.run({
                                                     build_errors: 1
@@ -106,6 +109,7 @@ module Scan
                                                 end
                                               end)
 
+      UI.important("Returned from command execution")
       # UI.error("Runner finished with exit status: #{exit_status}")
       exit_status
     end
@@ -270,9 +274,12 @@ module Scan
       zip_build_products
       copy_xctestrun
 
+      UI.important("Here 1!")
+
       # For build_for_testing, no tests are executed and no results are parsed.
       # Ensure we still fail the step on any non-zero exit status from xcodebuild.
       if Scan.config[:build_for_testing]
+        UI.important("Here 2!")
         unless tests_exit_status == 0
           if Scan.config[:fail_build]
             UI.build_failure!("Build for testing failed. Exit status: #{tests_exit_status}")
@@ -283,8 +290,10 @@ module Scan
         return nil
       end
 
+      UI.important("Here 3!")
       results = trainer_test_results
 
+      UI.important("Here 4!")
       number_of_retries = results[:number_of_retries]
       number_of_skipped = results[:number_of_skipped]
       number_of_tests = results[:number_of_tests_excluding_retries]
@@ -295,6 +304,7 @@ module Scan
         failures: number_of_failures
       })
 
+      UI.important("Here 5!")
       if number_of_failures > 0
         failures_str = number_of_failures.to_s.red
       else
@@ -310,6 +320,7 @@ module Scan
                       " (and #{number_of_retries} retries)"
                     end
 
+      UI.important("Here 6!")
       puts(Terminal::Table.new({
         title: "Test Results",
         rows: [
@@ -329,7 +340,7 @@ module Scan
           UI.error("Tests have failed")
         end
       end
-
+      UI.important("Here 7!")
       unless tests_exit_status == 0
         if Scan.config[:fail_build]
           UI.test_failure!("Test execution failed. Exit status: #{tests_exit_status}")
@@ -337,8 +348,10 @@ module Scan
           UI.error("Test execution failed. Exit status: #{tests_exit_status}")
         end
       end
+      UI.important("Here 8!")
 
       open_report
+      UI.important("Here 9!")
       return results
     end
 
